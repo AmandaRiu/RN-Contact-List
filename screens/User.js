@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     StyleSheet,
     Text,
@@ -11,67 +11,54 @@ import colors from '../utils/colors';
 import { fetchUserContact } from '../utils/api';
 import store from '../store';
 
-export default class User extends React.Component {
-    state = {
-        user: store.getState().user,
-        loading: store.getState().isFetchingUser,
-        error: store.getState().error,
-    };
+export default function User( props ) {
+    const [ user, setUser ] = useState( store.getState().user );
+    const [ loading, setLoading ] = useState( store.getState().isFetchingUser );
+    const [ error, setError ] = useState( store.getState().error );
 
-    async componentDidMount() {
-        this.unsubscribe = store.onChange( () =>
-            this.setState( {
-                user: store.getState().user,
-                loading: store.getState().isFetchingUser,
-                error: store.getState().error,
-            } )
-        );
+    const { avatar, name, phone } = user;
 
-        const { user } = this.state;
+    useEffect( () => {
+        const unsubscribe = store.onChange( () => {
+            console.log( "User > useEffect > fired!" );
+            setUser( store.getState().user );
+            setLoading( store.getState().isFetchingUser );
+            setError( store.getState().error );
+        } );
 
         if ( Object.entries( user ).length === 0 ) {
-            try {
-                const user = await fetchUserContact();
-
+            fetchUserContact().then( user => {
                 store.setState( {
                     user,
                     isFetchingUser: false,
                     error: false,
                 } );
-            } catch ( e ) {
-                console.log( "User -> Error loading user: " + e );
+            }, error => {
+                console.log( "User -> Error loading user: " + error );
                 store.setState( {
                     isFetchingUser: false,
                     error: true,
                 } );
-            }
+            } );
         }
-    };
 
-    componentWillUnmount() {
-        this.unsubscribe();
-    }
+        return () => unsubscribe();
+    }, [] );
 
-    render() {
-        console.log( "User > render > " + JSON.stringify( this.state ) );
-        const { user, loading, error } = this.state;
-        const { avatar, name, phone } = user;
+    return (
+        <View style={ styles.container }>
+            {loading && <ActivityIndicator size="large" /> }
+            {error && <Text>Error...</Text> }
 
-        return (
-            <View style={ styles.container }>
-                {loading && <ActivityIndicator size="large" /> }
-                {error && <Text>Error...</Text> }
-
-                {!loading && (
-                    <ContactThumbnail
-                        avatar={ avatar }
-                        name={ name }
-                        phone={ phone }
-                    />
-                ) }
-            </View>
-        );
-    }
+            {!loading && (
+                <ContactThumbnail
+                    avatar={ avatar }
+                    name={ name }
+                    phone={ phone }
+                />
+            ) }
+        </View>
+    );
 }
 
 const styles = StyleSheet.create( {

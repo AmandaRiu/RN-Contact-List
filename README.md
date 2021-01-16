@@ -10,6 +10,10 @@ This project introduced the following concepts:
 - Since all the navigation stuff meant I had to try to learn it all from the docs anyway, I skipped the options screen and drawer navigation as that wouldn't immediately be useful for my role at gutenberg-mobile. 
 - Couldn't get deep linking to work so ended up removing it for now
 
+#### Additional Modifications
+- Converted React Classes to functional components since that's the current standard. 
+
+
 ## Notes
 #### Reworked code using updated React navigation library
 - The book used the old version of the Navigation Library so I had to completely rework it and follow the current official guides. 
