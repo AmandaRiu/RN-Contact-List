@@ -20,7 +20,6 @@ export default function User( props ) {
 
     useEffect( () => {
         const unsubscribe = store.onChange( () => {
-            console.log( "User > useEffect > fired!" );
             setUser( store.getState().user );
             setLoading( store.getState().isFetchingUser );
             setError( store.getState().error );
