@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     StyleSheet,
     Text,
@@ -13,18 +13,20 @@ import ContactThumbnail from '../components/ContactThumbnail';
 
 const keyExtractor = ( { phone } ) => phone;
 
-export default class Favorites extends React.Component {
-    state = {
-        contacts: store.getState().contacts,
-        loading: store.getState().isFetchingContacts,
-        error: store.getState().error,
-    };
+export default function Favorites( props ) {
+    const [ state, setState ] = useState(
+        {
+            contacts: store.getState().contacts,
+            loading: store.getState().isFetchingContacts,
+            error: store.getState().error,
+        }
+    );
 
-    async componentDidMount() {
-        const { contacts } = this.state;
+    useEffect( () => {
+        const { contacts } = state;
 
-        this.unsubscribe = store.onChange( () =>
-            this.setState( {
+        const unsubscribe = store.onChange( () =>
+            setState( {
                 contacts: store.getState().contacts,
                 loading: store.getState().isFetchingContacts,
                 error: store.getState().error,
@@ -32,31 +34,27 @@ export default class Favorites extends React.Component {
         );
 
         if ( contacts.length === 0 ) {
-            try {
-                const contacts = await fetchContacts();
-
+            fetchContacts().then( ( contacts ) => {
                 store.setState( {
                     contacts,
                     isFetchingContacts: false,
                     error: false,
                 } );
-            } catch ( e ) {
-                console.log( "Favorites -> Error fetching favorites: " + e );
+            }, ( error ) => {
+                console.log( "Favorites -> Error fetching favorites: " + error );
                 store.setState( {
                     isFetchingContacts: false,
                     error: true,
                 } );
-            }
+            } );
         }
-    }
 
-    componentWillUnmount() {
-        this.unsubscribe();
-    }
+        return () => unsubscribe();
+    } );
 
-    renderFavoriteThumbnail = ( { item } ) => {
+    const renderFavoriteThumbnail = ( { item } ) => {
         const { avatar } = item;
-        const { navigation } = this.props;
+        const { navigation } = props;
 
         return (
             <ContactThumbnail
@@ -66,29 +64,27 @@ export default class Favorites extends React.Component {
         );
     };
 
-    render() {
-        const { loading, contacts, error } = this.state;
-        const favorites = contacts.filter( contact => contact.favorite );
+    const { loading, contacts, error } = state;
+    const favorites = contacts.filter( contact => contact.favorite );
 
-        return (
-            <View style={ styles.container }>
-                {loading && <ActivityIndicator size="large" /> }
-                {error && <Text>Error...</Text> }
+    return (
+        <View style={ styles.container }>
+            {loading && <ActivityIndicator size="large" /> }
+            {error && <Text>Error...</Text> }
 
-                {!loading &&
-                    !error && (
-                        <FlatList
-                            data={ favorites }
-                            keyExtractor={ keyExtractor }
-                            numColumns={ 3 }
-                            contentContainerStyle={ styles.list }
-                            renderItem={ this.renderFavoriteThumbnail }
-                        />
-                    )
-                }
-            </View>
-        );
-    }
+            {!loading &&
+                !error && (
+                    <FlatList
+                        data={ favorites }
+                        keyExtractor={ keyExtractor }
+                        numColumns={ 3 }
+                        contentContainerStyle={ styles.list }
+                        renderItem={ renderFavoriteThumbnail }
+                    />
+                )
+            }
+        </View>
+    );
 }
 
 const styles = StyleSheet.create( {
